@@ -1,0 +1,10 @@
+2014/10/29 (setup.py 0.1.0)
+ - Adding DB2 backend support in Alembic database migrations tool
+ - New files added
+   - ibm_db_alembic/ibm_db_alembic/__init__.py
+   - ibm_db_alembic/ibm_db_alembic/ibm_db.py
+   - ibm_db_alembic/setup.py
+   - ibm_db_alembic/CHANGES
+   - ibm_db_alembic/LICENSE
+   - ibm_db_alembic/README
+   - ibm_db_alembic/MANIFEST.in
