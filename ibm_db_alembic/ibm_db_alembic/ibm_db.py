@@ -36,7 +36,7 @@ class IbmDbImpl(DefaultImpl):
         if construct == checkReorgSQL:
             return
         
-        super(IbmDbImpl, self)._exec(construct, *args, **kw)
+        result = super(IbmDbImpl, self)._exec(construct, *args, **kw)
         conn = self.connection
         res = conn.execute(checkReorgSQL)
         reorgSQLs = []
@@ -47,6 +47,7 @@ class IbmDbImpl(DefaultImpl):
         
         for sql in reorgSQLs:
             conn.execute(sql)
+        return result
             
     def alter_column(self, table_name, column_name,
                         nullable=None,
