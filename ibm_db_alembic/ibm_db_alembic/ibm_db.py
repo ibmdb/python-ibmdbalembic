@@ -21,6 +21,7 @@
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import reflection
+from sqlalchemy import schema as sa_schema
 from ibm_db_sa import reflection as ibm_db_reflection
 
 from alembic.ddl.impl import DefaultImpl
@@ -31,6 +32,22 @@ class IbmDbImpl(DefaultImpl):
     __dialect__ = 'ibm_db_sa'
     transactional_ddl = True
     
+    def get_server_version_info(self, dialect):
+        """Returns the DB2 server major and minor version as a list of ints."""
+        if hasattr(dialect, 'dbms_ver'):
+            return [int(ver_token) for ver_token in dialect.dbms_ver.split('.')[0:2]]
+        else:
+            return []
+    
+    def _is_nullable_unique_constraint_supported(self, dialect):
+        """Checks to see if the DB2 version is at least 10.5.
+        This is needed for checking if unique constraints with null columns are supported.
+        """
+        if hasattr(dialect, 'dbms_name') and (dialect.dbms_name.find('DB2/') != -1):
+            return self.get_server_version_info(dialect) >= [10, 5]
+        else:
+            return False
+        
     def _exec(self, construct, *args, **kw):
         checkReorgSQL = "select TABSCHEMA, TABNAME from SYSIBMADM.ADMINTABINFO where REORG_PENDING = 'Y'"
         if construct == checkReorgSQL:
@@ -153,6 +170,19 @@ class IbmDbImpl(DefaultImpl):
                         base.format_column_name(self.dialect.ddl_compiler(self.dialect, None), column.name))
             self._exec(pk_sql)
 
+    def drop_constraint(self, const):
+        """ check for unique constraint created as "unique index exclude nulls" for constraint containing nullable columns
+        """
+        if isinstance(const, sa_schema.UniqueConstraint):
+            if self._is_nullable_unique_constraint_supported(self.dialect):
+                const.uConstraint_as_index = True
+                db2reflector = ibm_db_reflection.DB2Reflector(self.bind.dialect)
+                uni_consts = db2reflector.get_unique_constraints(self.connection, const.table.name)
+                for uni_const in uni_consts:
+                    if uni_const.get('name') == const.name.lower():
+                        const.uConstraint_as_index = False
+        self._exec(sa_schema.DropConstraint(const))
+        
     def rename_table(self, old_table_name, new_table_name, schema=None):
         db2reflector = ibm_db_reflection.DB2Reflector(self.bind.dialect)
         deff_fks = db2reflector.get_foreign_keys(self.connection, old_table_name, schema)
