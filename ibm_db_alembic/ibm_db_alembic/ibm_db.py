@@ -22,6 +22,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import reflection
 from sqlalchemy import schema as sa_schema
+from sqlalchemy import types as sa_types
 from ibm_db_sa import reflection as ibm_db_reflection
 
 from alembic.ddl.impl import DefaultImpl
@@ -101,6 +102,14 @@ class IbmDbImpl(DefaultImpl):
                                 existing_nullable=existing_nullable,
                             ))
         if type_ is not None:
+            if isinstance(type_, sa_types.Enum):
+                try:
+                    self._exec("ALTER TABLE %s DROP CHECK %s" %
+                               (base.format_table_name(self.dialect.ddl_compiler(self.dialect, None), table_name, schema),
+                                type_.name))
+                except Exception:
+                    pass #continue since check constraint doesn't exist
+                
             if primary_key_columns and column_name.lower() in primary_key_columns:
                 self._exec("ALTER TABLE %s DROP PRIMARY KEY" % 
                            (base.format_table_name(self.dialect.ddl_compiler(self.dialect, None), table_name, schema)))
