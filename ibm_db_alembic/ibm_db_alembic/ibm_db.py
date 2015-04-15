@@ -81,7 +81,7 @@ class IbmDbImpl(DefaultImpl):
         primary_key_columns = None
         deferred_primary_key = None
         if type_ or name:
-            insp = reflection.Inspector.from_engine(self.bind.engine)
+            insp = reflection.Inspector.from_engine(self.connection)
             primary_key_columns = insp.get_pk_constraint(table_name, schema).get('constrained_columns')
         if autoincrement is not None or existing_autoincrement is not None:
             util.warn("autoincrement and existing_autoincrement only make sense for MySQL")
