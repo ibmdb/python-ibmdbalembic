@@ -32,14 +32,14 @@ from alembic.ddl.base import ColumnType, RenameTable, AddColumn, ColumnName
 class IbmDbImpl(DefaultImpl):
     __dialect__ = 'ibm_db_sa'
     transactional_ddl = True
-    
+
     def get_server_version_info(self, dialect):
         """Returns the DB2 server major and minor version as a list of ints."""
         if hasattr(dialect, 'dbms_ver'):
             return [int(ver_token) for ver_token in dialect.dbms_ver.split('.')[0:2]]
         else:
             return []
-    
+
     def _is_nullable_unique_constraint_supported(self, dialect):
         """Checks to see if the DB2 version is at least 10.5.
         This is needed for checking if unique constraints with null columns are supported.
@@ -48,12 +48,12 @@ class IbmDbImpl(DefaultImpl):
             return self.get_server_version_info(dialect) >= [10, 5]
         else:
             return False
-        
+
     def _exec(self, construct, *args, **kw):
         checkReorgSQL = "select TABSCHEMA, TABNAME from SYSIBMADM.ADMINTABINFO where REORG_PENDING = 'Y'"
         if construct == checkReorgSQL:
             return
-        
+
         result = super(IbmDbImpl, self)._exec(construct, *args, **kw)
         conn = self.connection
         res = conn.execute(checkReorgSQL)
@@ -62,11 +62,11 @@ class IbmDbImpl(DefaultImpl):
             for sName, tName in res:
                 reorgSQL = '''CALL SYSPROC.ADMIN_CMD('REORG TABLE "%(sName)s"."%(tName)s"')''' % {'sName': sName, 'tName': tName}
                 reorgSQLs.append(reorgSQL)
-        
+
         for sql in reorgSQLs:
             conn.execute(sql)
         return result
-            
+
     def alter_column(self, table_name, column_name,
                         nullable=None,
                         server_default=False,
@@ -109,12 +109,12 @@ class IbmDbImpl(DefaultImpl):
                                 type_.name))
                 except Exception:
                     pass #continue since check constraint doesn't exist
-                
+
             if primary_key_columns and column_name.lower() in primary_key_columns:
-                self._exec("ALTER TABLE %s DROP PRIMARY KEY" % 
+                self._exec("ALTER TABLE %s DROP PRIMARY KEY" %
                            (base.format_table_name(self.dialect.ddl_compiler(self.dialect, None), table_name, schema)))
                 try:
-                    self._exec("ALTER TABLE %s ALTER COLUMN %s DROP IDENTITY" % 
+                    self._exec("ALTER TABLE %s ALTER COLUMN %s DROP IDENTITY" %
                                (base.format_table_name(self.dialect.ddl_compiler(self.dialect, None), table_name, schema),
                                 base.format_column_name(self.dialect.ddl_compiler(self.dialect, None), column_name)))
                 except Exception:
@@ -122,19 +122,19 @@ class IbmDbImpl(DefaultImpl):
                 if name is not None:
                     primary_key_columns.remove(column_name.lower())
                     primary_key_columns.add(name.lower())
-                    
+
                 deferred_primary_key = True
-                           
+
             self._exec(base.ColumnType(
                                 table_name, column_name, type_, schema=schema,
                                 existing_type=existing_type,
                                 existing_server_default=existing_server_default,
                                 existing_nullable=existing_nullable,
                             ))
-        
+
         if name is not None:
             if primary_key_columns and not deferred_primary_key and column_name.lower() in primary_key_columns:
-                self._exec("ALTER TABLE %s DROP PRIMARY KEY" % 
+                self._exec("ALTER TABLE %s DROP PRIMARY KEY" %
                            (base.format_table_name(self.dialect.ddl_compiler(self.dialect, None), table_name, schema)))
                 primary_key_deferred = True
             self._exec(base.ColumnName(
@@ -143,12 +143,29 @@ class IbmDbImpl(DefaultImpl):
                                 existing_server_default=existing_server_default,
                                 existing_nullable=existing_nullable,
                             ))
-            
+
         if deferred_primary_key:
-            self._exec("Alter TABLE %s ADD PRIMARY KEY(%s)" % 
+            self._exec("Alter TABLE %s ADD PRIMARY KEY(%s)" %
                        (base.format_table_name(self.dialect.ddl_compiler(self.dialect, None), table_name, schema),
                         ','.join(base.format_column_name(self.dialect.ddl_compiler(self.dialect, None), col) for col in primary_key_columns)))
-                        
+
+    def correct_for_autogen_constraints(self, conn_unique_constraints,
+                                    conn_indexes,
+                                    metadata_unique_constraints,
+                                    metadata_indexes):
+        removed = set()
+        for idx in list(conn_indexes):
+            if idx.unique:
+                idx_columns = set(column[0] for column in idx.columns.items())
+                for uc in metadata_unique_constraints:
+                    uc_columns = set(column[0] for column in uc.columns.items())
+                    if idx_columns == uc_columns and idx.name == uc.name:
+                        removed.add(idx)
+                        conn_unique_constraints.add(uc)
+                        break
+        for idx in removed:
+            conn_indexes.remove(idx)
+
     def add_column(self, table_name, column, schema=None):
         nullable = True
         pk = False
@@ -159,7 +176,7 @@ class IbmDbImpl(DefaultImpl):
             pk = True
             column.primary_key = False
         super(IbmDbImpl, self).add_column(table_name, column, schema)
-        
+
         if not nullable:
             self._exec(base.ColumnNullable(table_name, column.name, nullable, schema=schema))
         if pk:
@@ -191,16 +208,16 @@ class IbmDbImpl(DefaultImpl):
                     if uni_const.get('name') == const.name.lower():
                         const.uConstraint_as_index = False
         self._exec(sa_schema.DropConstraint(const))
-        
+
     def rename_table(self, old_table_name, new_table_name, schema=None):
         db2reflector = ibm_db_reflection.DB2Reflector(self.bind.dialect)
         deff_fks = db2reflector.get_foreign_keys(self.connection, old_table_name, schema)
         inc_fks = db2reflector.get_incoming_foreign_keys(self.connection, old_table_name, schema)
-        
+
         for inc_fk in inc_fks:
             if inc_fk.get('name') not in (deff_fk.get('name') for deff_fk in deff_fks):
                 deff_fks.append(inc_fk)
-        
+
         for fk in deff_fks:
             sql_drop_fk = "ALTER TABLE %(table)s DROP CONSTRAINT %(name)s"
             fk_table = fk.get('constrained_table') or old_table_name
@@ -208,18 +225,18 @@ class IbmDbImpl(DefaultImpl):
             self._exec( sql_drop_fk % {
                             'table': "%s.%s" % (fk_schema, fk_table) if fk_schema else fk_table,
                             'name': fk.get('name')})
-            
+
         self._exec(base.RenameTable(old_table_name, new_table_name, schema=schema))
-        
-        for fk in deff_fks: 
+
+        for fk in deff_fks:
             sql_create_fk = "ALTER TABLE %(table)s ADD CONSTRAINT %(name)s FOREIGN KEY (%(column)s) REFERENCES %(to_table)s (%(to_column)s)"
             if fk.get('constrained_table') == old_table_name.lower():
                 fk['constrained_table'] = new_table_name.lower()
             if fk.get('referred_table') == old_table_name.lower():
-                fk['referred_table'] = new_table_name.lower() 
-                
+                fk['referred_table'] = new_table_name.lower()
+
             fk_table = fk.get('constrained_table') or new_table_name.lower()
-            fk_schema = fk.get('constrained_schema') or schema 
+            fk_schema = fk.get('constrained_schema') or schema
             to_table = fk.get('referred_table')
             to_schema = fk.get('referred_schema')
             self._exec(sql_create_fk % {
@@ -236,7 +253,7 @@ def visit_column_type(element, compiler, **kw):
         base.alter_column(compiler, element.column_name),
         "SET DATA TYPE %s" % base.format_type(compiler, element.type_)
     )
-    
+
 @compiles(ColumnName, 'ibm_db_sa')
 def visit_column_name(element, compiler, **kw):
     return "%s RENAME COLUMN %s TO %s" % (
@@ -248,7 +265,6 @@ def visit_column_name(element, compiler, **kw):
 @compiles(RenameTable, 'ibm_db_sa')
 def visit_rename_table(element, compiler, **kw):
     return "RENAME TABLE %s TO %s" % (
-        base.format_table_name(compiler, element.table_name, element.schema),        
+        base.format_table_name(compiler, element.table_name, element.schema),
         base.format_table_name(compiler, element.new_table_name, element.schema)
     )
-    
