@@ -11,7 +11,7 @@ Prerequisites
 4. IBM_DB_SA 0.3.2 or above
 4. IBM_DB driver and IBM_DB_DBI wrapper 1.0.1 or higher
 
-Install and COnfiguration
+Install and Configuration
 ==========================
 The IBM_DB_ALEMBIC Python Egg component (.egg) can be installed using the standard setuptools provided by the Python Easy Install through Python Entreprise 
 Application Kit community portal:
@@ -33,3 +33,10 @@ Please follow the steps provided to Install "Easy Install" in the link above and
 Connecting
 ----------
 To allow ibm_db_alembic loaded up when alembic runs, edit env.py file and import IbmDbImpl "from ibm_db_alembic import IbmDbImpl"
+
+Contributing to ibm_db_alembic python project
+---------------------------------------------
+See CONTRIBUTING
+
+The developer sign-off should include the reference to the DCO in remarks(example below):
+DCO 1.1 Signed-off-by: Random J Developer <random@developer.org>
