@@ -39,5 +39,7 @@ Contributing to ibm_db_alembic python project
 See `CONTRIBUTING
 <https://github.com/ibmdb/python-ibmdbalembic/tree/master/ibm_db_alembic/contributing/CONTRIBUTING.md>`_.
 
+```
 The developer sign-off should include the reference to the DCO in remarks(example below):
 DCO 1.1 Signed-off-by: Random J Developer <random@developer.org>
+```
