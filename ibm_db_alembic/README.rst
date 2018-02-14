@@ -32,7 +32,7 @@ Please follow the steps provided to Install "Easy Install" in the link above and
         
 Connecting
 ----------
-To allow ibm_db_alembic loaded up when alembic runs, edit env.py file and import IbmDbImpl "from ibm_db_alembic import IbmDbImpl"
+To allow ibm_db_alembic loaded up when alembic runs, edit env.py file and import IbmDbImpl `from ibm_db_alembic.ibm_db import IbmDbImpl`
 
 Contributing to ibm_db_alembic python project
 ---------------------------------------------
