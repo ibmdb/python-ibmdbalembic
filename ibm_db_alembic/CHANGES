@@ -1,3 +1,5 @@
+2018/03/06 (setup.py 0.2.0)
+ - Updated with latest code and bug fixes.
 2014/10/29 (setup.py 0.1.0)
  - Adding DB2 backend support in Alembic database migrations tool
  - New files added

@@ -1,7 +1,7 @@
 # +--------------------------------------------------------------------------+
 # |  Licensed Materials - Property of IBM                                    |
 # |                                                                          |
-# | (C) Copyright IBM Corporation 2014.                                      |
+# | (C) Copyright IBM Corporation 2018.                                      |
 # +--------------------------------------------------------------------------+
 # | This module complies with Alembic and is                                 |
 # | Licensed under the Apache License, Version 2.0 (the "License");          |
@@ -13,8 +13,8 @@
 # | KIND, either express or implied. See the License for the specific        |
 # | language governing permissions and limitations under the License.        |
 # +--------------------------------------------------------------------------+
-# | Authors: Rahul Priyadarshi                                               |
+# | Authors: Rahul Priyadarshi, Abhinav Radke                                |
 # +--------------------------------------------------------------------------+
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
