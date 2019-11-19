@@ -21,6 +21,7 @@
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import reflection
+from sqlalchemy.util import warn
 from sqlalchemy import schema as sa_schema
 from sqlalchemy import types as sa_types
 from ibm_db_sa import reflection as ibm_db_reflection
@@ -85,7 +86,7 @@ class IbmDbImpl(DefaultImpl):
             insp = reflection.Inspector.from_engine(self.connection)
             primary_key_columns = insp.get_pk_constraint(table_name, schema).get('constrained_columns')
         if autoincrement is not None or existing_autoincrement is not None:
-            util.warn("autoincrement and existing_autoincrement only make sense for MySQL")
+            warn("autoincrement and existing_autoincrement only make sense for MySQL")
         if nullable is not None:
             self._exec(base.ColumnNullable(table_name, column_name,
                                 nullable, schema=schema,
